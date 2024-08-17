@@ -20,8 +20,7 @@ def save_backup():
     # Copy current save to backup folder
     shutil.copy2('Game.rxdata', 'Backup')
     
-def delete_old_backup(service):
-    # Get id of old backup to delete
+def get_latest_backup(service):
     q = f"'{FOLDER_ID}' in parents and name = 'Game.rxdata'"
     results = (
         service.files()
@@ -32,11 +31,11 @@ def delete_old_backup(service):
     
     # If a backup exists, delete it
     if items:
-        service.files().delete(fileId=items[0]['id']).execute()
+        return items[0]['id']
 
 def send_backup_to_drive(service):
     # Remove old backup
-    delete_old_backup(service)
+    service.files().delete(fileId=get_latest_backup(service)).execute()
     
     # Name and upload new backup file
     metadata = {'name': 'Game.rxdata', 'parents': [FOLDER_ID]}
@@ -74,8 +73,6 @@ def main():
     save_backup()
     service = api_login()
     send_backup_to_drive(service)
-
-
 
 if __name__ == "__main__":
   main()
