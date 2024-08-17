@@ -10,6 +10,7 @@ from googleapiclient.http import MediaFileUpload
 
 # If modifying these scopes, delete the file token.json.
 SCOPES = ["https://www.googleapis.com/auth/drive"]
+FOLDER_ID = '1qshwEt0oau4aMw0-VLxCR8lpiUexEhV4'
 
 def save_backup():
     # Make backup folder (in cwd) if it doesn't exist
@@ -18,10 +19,27 @@ def save_backup():
     
     # Copy current save to backup folder
     shutil.copy2('Game.rxdata', 'Backup')
+    
+def delete_old_backup(service):
+    # Get id of old backup to delete
+    q = f"'{FOLDER_ID}' in parents and name = 'Game.rxdata'"
+    results = (
+        service.files()
+        .list(q=q, pageSize=1, fields="files(id, name)")
+        .execute()
+    )
+    items = results.get('files', [])
+    
+    # If a backup exists, delete it
+    if items:
+        service.files().delete(fileId=items[0]['id']).execute()
 
 def send_backup_to_drive(service):
-    backup_folder_id = '1qshwEt0oau4aMw0-VLxCR8lpiUexEhV4'
-    metadata = {'name': 'Game.rxdata', 'parents': [backup_folder_id]}
+    # Remove old backup
+    delete_old_backup(service)
+    
+    # Name and upload new backup file
+    metadata = {'name': 'Game.rxdata', 'parents': [FOLDER_ID]}
     media = MediaFileUpload(filename='Game.rxdata', mimetype='application/octet-stream')
     file = service.files().create(body=metadata, media_body=media, fields='id').execute()
     return file.get('id')
