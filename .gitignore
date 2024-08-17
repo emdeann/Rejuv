@@ -1,3 +1,4 @@
 *.rxdata
 *.dat
 *.json
+__pycache__/upload_save.cpython-312.pyc

@@ -1,5 +1,6 @@
 import shutil
 import os.path
+import io
 
 from google.auth.transport.requests import Request
 from google.oauth2.credentials import Credentials
@@ -7,6 +8,7 @@ from google_auth_oauthlib.flow import InstalledAppFlow
 from googleapiclient.discovery import build
 from googleapiclient.errors import HttpError
 from googleapiclient.http import MediaFileUpload
+from googleapiclient.http import MediaIoBaseDownload
 
 # If modifying these scopes, delete the file token.json.
 SCOPES = ["https://www.googleapis.com/auth/drive"]
@@ -19,7 +21,22 @@ def save_backup():
     
     # Copy current save to backup folder
     shutil.copy2('Game.rxdata', 'Backup')
+    print('Save data sent to backups folder')
+
+def download_latest_backup(service):
+    request = service.files().get_media(fileId=get_latest_backup(service))
+    file = io.BytesIO()
+    downloader = MediaIoBaseDownload(file, request)
+    done = False
     
+    while done is False:
+      status, done = downloader.next_chunk()
+      print(f"Download {int(status.progress() * 100)}.")
+      
+    with open('Game.rxdata', 'wb') as f:
+        f.write(file.getvalue())
+    print('Latest backup downloaded!')
+
 def get_latest_backup(service):
     q = f"'{FOLDER_ID}' in parents and name = 'Game.rxdata'"
     results = (
@@ -70,7 +87,6 @@ def api_login():
     return service
 
 def main():
-    save_backup()
     service = api_login()
     send_backup_to_drive(service)
 
