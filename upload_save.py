@@ -58,6 +58,9 @@ def send_backup_to_drive(service):
     metadata = {'name': 'Game.rxdata', 'parents': [FOLDER_ID]}
     media = MediaFileUpload(filename='Game.rxdata', mimetype='application/octet-stream')
     file = service.files().create(body=metadata, media_body=media, fields='id').execute()
+    
+    print('Save data sent to Drive!')
+    
     return file.get('id')
 
 def api_login():
