@@ -24,18 +24,22 @@ def save_backup():
     print('Save data sent to backups folder')
 
 def download_latest_backup(service):
-    request = service.files().get_media(fileId=get_latest_backup(service))
-    file = io.BytesIO()
-    downloader = MediaIoBaseDownload(file, request)
-    done = False
-    
-    while done is False:
-      status, done = downloader.next_chunk()
-      print(f"Download {int(status.progress() * 100)}.")
-      
-    with open('Game.rxdata', 'wb') as f:
-        f.write(file.getvalue())
-    print('Latest backup downloaded!')
+    print('Getting latest backup from Drive...')
+    back = get_latest_backup(service)
+    if back:
+        request = service.files().get_media(fileId=back)
+        file = io.BytesIO()
+        downloader = MediaIoBaseDownload(file, request)
+        done = False
+        
+        while done is False:
+            _, done = downloader.next_chunk()
+        
+        with open('Game.rxdata', 'wb') as f:
+            f.write(file.getvalue())
+        print('Latest backup downloaded!')
+    else:
+        print("No Drive file found!")
 
 def get_latest_backup(service):
     q = f"'{FOLDER_ID}' in parents and name = 'Game.rxdata'"
@@ -46,15 +50,19 @@ def get_latest_backup(service):
     )
     items = results.get('files', [])
     
-    # If a backup exists, delete it
+    # If a backup exists, return it
     if items:
         return items[0]['id']
 
 def send_backup_to_drive(service):
     # Remove old backup
-    service.files().delete(fileId=get_latest_backup(service)).execute()
+    back = get_latest_backup(service)
+    if back:
+        service.files().delete(fileId=get_latest_backup(service)).execute()
+        print('Deleted old backup from Drive')
     
     # Name and upload new backup file
+    print('Starting upload...')
     metadata = {'name': 'Game.rxdata', 'parents': [FOLDER_ID]}
     media = MediaFileUpload(filename='Game.rxdata', mimetype='application/octet-stream')
     file = service.files().create(body=metadata, media_body=media, fields='id').execute()
@@ -86,7 +94,8 @@ def api_login():
         service = build("drive", "v3", credentials=creds)  
     except HttpError as error:
         print(error)
-        
+    
+    print('Logged into Drive') 
     return service
 
 def main():
