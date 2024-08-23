@@ -1,5 +1,6 @@
 ﻿Function UploadSave {
     # Assumes a correct pipenv environment
+    cd "C:\Users\Dean\Saved Games\Rejuv"
     pipenv run python upload_save.py
 
 }
